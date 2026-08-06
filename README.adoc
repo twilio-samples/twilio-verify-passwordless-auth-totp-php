@@ -1,0 +1,27 @@
+= TOTP (Time-based One Time Passcode)-backed Passwordless Auth in PHP Using Twilio Verify PHP
+
+This project shows how to implement passwordless authentication in PHP with TOTP using Twilio Verify.
+
+== Prerequisites
+
+You'll need the following to use the application:
+
+* PHP 8.4 or above
+* https://getcomposer.org[Composer] installed globally
+* Your preferred code editor or IDE
+* Some terminal experience is helpful, though not required
+
+== Contributing
+
+If you want to contribute to the project, whether you have found issues with it or just want to improve it, here's how:
+
+* https://github.com/settermjd/twilio-slim-base-project/issues[Issues]: ask questions and submit your feature requests, bug reports, etc
+* https://github.com/settermjd/twilio-slim-base-project/pulls[Pull requests]: send your improvements
+
+== License
+
+http://www.opensource.org/licenses/mit-license.html[MIT]
+
+== Disclaimer
+
+No warranty expressed or implied. Software is as is.
