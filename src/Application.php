@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace App;
 
+use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use SlimSession\Helper as SlimSessionHelper;
 use Slim\App as SlimApp;
+use Slim\Flash\Messages;
 use Slim\Interfaces\RouteInterface;
 use Slim\Middleware\ContentLengthMiddleware;
 use Slim\Views\Twig;
+use Twilio\Rest\Client;
+use chillerlan\QRCode\QRCode;
+
+use function assert;
 
 /**
  * This class encapsulates the central Slim application,
@@ -17,12 +24,23 @@ use Slim\Views\Twig;
  */
 final class Application
 {
+    private Client $twilio;
+    private SlimSessionHelper $session;
+    private string $verifyServiceSid;
+
     public function __construct(private readonly SlimApp $app)
     {
         $app->add(new ContentLengthMiddleware());
         $app->addBodyParsingMiddleware();
         $app->addRoutingMiddleware();
         $app->addErrorMiddleware(true, true, true);
+
+        $this->session          = new SlimSessionHelper();
+        $this->verifyServiceSid = $_ENV['TWILIO_VERIFY_SERVICE_SID'];
+
+        $twilio = $this->app->getContainer()->get(Client::class);
+        assert($twilio instanceof Client);
+        $this->twilio = $twilio;
     }
 
     /**
@@ -77,6 +95,32 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
+        $postData = $request->getParsedBody();
+        $username = $postData['username'] ?? '';
+
+        $secret = "ff483d1ff591898a9942916050d2ca3f";
+        $this->session->set('secret', $secret);
+
+        $factor = $this->twilio
+            ->verify
+            ->v2
+            ->services($this->verifyServiceSid)
+            // This needs to be created with each new session
+            // See: https://www.twilio.com/docs/verify/api/factor#create-a-new-factor-resource
+            ->entities($secret)
+            ->newFactors
+            ->create($username, "totp");
+
+        $this->session->set('friendly_name', $factor->friendlyName);
+        $this->session->set('sid', $factor->sid);
+        $this->session->set('otp_uri', $factor->binding['uri']);
+        $this->session->set('url', $factor->url);
+
+        $location = $factor->status === 'unverified' ? '/challenge' : '/';
+        $response = $response
+            ->withHeader('Location', $location)
+            ->withStatus(StatusCodeInterface::STATUS_FOUND);
+
         return $response;
     }
 
@@ -93,7 +137,17 @@ final class Application
         ResponseInterface $response,
     ): ResponseInterface {
         $view = Twig::fromRequest($request);
-        return $view->render($response, 'verify-user.html.twig', []);
+
+        $qrCodeUri = $this->session->get('otp_uri') ?? '';
+        $qrcode    = (new QRCode())->render($qrCodeUri);
+
+        return $view->render(
+            $response,
+            'verify-user.html.twig',
+            [
+                'qr_code' => $qrcode,
+            ],
+        );
     }
 
     /**
@@ -104,6 +158,28 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
+        $postData = $request->getParsedBody();
+        $code     = $postData['code'] ?? '';
+        $entity   = $this->session->get('secret') ?? '';
+        $factors  = $this->session->get('sid') ?? '';
+
+        $factor = $this->twilio
+            ->verify
+            ->v2
+            ->services($this->verifyServiceSid)
+            ->entities($entity)
+            ->factors($factors)
+            ->update(
+                [
+                    "authPayload" => $code,
+                ],
+            );
+
+        $location = $factor->status === 'verified' ? '/token' : '/challenge';
+        $response = $response
+            ->withHeader('Location', $location)
+            ->withStatus(StatusCodeInterface::STATUS_FOUND);
+
         return $response;
     }
 
@@ -115,8 +191,18 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        $view = Twig::fromRequest($request);
-        return $view->render($response, 'enter-code.html.twig', []);
+        $view     = Twig::fromRequest($request);
+        $username = $this->session->get('friendly_name') ?? '';
+        $identity = $this->session->get('secret') ?? '';
+
+        return $view->render(
+            $response,
+            'enter-code.html.twig',
+            [
+                'username' => $username,
+                'identity' => $identity,
+            ],
+        );
     }
 
     /**
@@ -127,6 +213,27 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
+        $postData = $request->getParsedBody();
+        $code     = $postData['code'] ?? '';
+        $entity   = $this->session->get('secret') ?? '';
+        $factors  = $this->session->get('sid') ?? '';
+
+        $challenge = $this->twilio
+            ->verify
+            ->v2
+            ->services($this->verifyServiceSid)
+            ->entities($entity)
+            ->challenges->create(
+                $factors,
+                [
+                    "authPayload" => $code,
+                ],
+            );
+
+        $response = $response
+            ->withHeader('Location', "/token")
+            ->withStatus(StatusCodeInterface::STATUS_FOUND);
+
         return $response;
     }
 }

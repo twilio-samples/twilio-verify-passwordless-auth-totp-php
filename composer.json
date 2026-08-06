@@ -15,6 +15,7 @@
     ],
     "require": {
         "bryanjhv/slim-session": "^4.1",
+        "chillerlan/php-qrcode": "^6.0",
         "monolog/monolog": "^3.10",
         "php-di/slim-bridge": "^3.4",
         "slim/psr7": "^1.8",

@@ -11,11 +11,10 @@
         <p class="mt-60">
         This demo of the <a href="https://www.twilio.com/docs/verify/api">Twilio Verify API</a> shows how to set up two-factor authentication (2FA) with a third-party authenticator app like <a href="https://authy.com/download/">Authy</a> or Google Authenticator using the <a href="https://www.twilio.com/docs/glossary/totp">time-based one-time password (TOTP)</a> standard.
         </p>
-        <form action="/" method="post" class="mt-60">
+        <form action="/challenge" method="post" class="mt-60">
             <p>Please scan the QR code in an authenticator app like Authy.</p>
-            <div>
-                <div>
-                </div>
+            <div style="display: flex; flex: auto; column-gap: 0.25rem; flex-shrink: 0;">
+                <img src="{{ qr_code }}" alt="QR Code">
                 <div>
                     <p>Or enter this code into your authentication app:</p>
                     <p><strong></strong></p>
