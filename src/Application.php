@@ -9,6 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\App as SlimApp;
 use Slim\Interfaces\RouteInterface;
 use Slim\Middleware\ContentLengthMiddleware;
+use Slim\Views\Twig;
 
 /**
  * This class encapsulates the central Slim application,
@@ -33,7 +34,7 @@ final class Application
         $this->app->post('/', [$this, 'processCreateTotpFactorForm']);
         $this->app->get('/challenge', [$this, 'displayVerifyUserForm']);
         $this->app->post('/challenge', [$this, 'processVerifyUserForm']);
-        $this->app->post('/token', [$this, 'showQRCodeForm']);
+        $this->app->get('/token', [$this, 'showQRCodeForm']);
         $this->app->post('/token', [$this, 'processQRCodeForm']);
     }
 
@@ -63,7 +64,8 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        return $response;
+        $view = Twig::fromRequest($request);
+        return $view->render($response, 'enter-username.html.twig', []);
     }
 
     /**
@@ -90,7 +92,8 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        return $response;
+        $view = Twig::fromRequest($request);
+        return $view->render($response, 'verify-user.html.twig', []);
     }
 
     /**
@@ -112,7 +115,8 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        return $response;
+        $view = Twig::fromRequest($request);
+        return $view->render($response, 'enter-code.html.twig', []);
     }
 
     /**
