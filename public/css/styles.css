@@ -6,7 +6,7 @@
     --color-text-weak: #606b85;
     --color-primary: #0263e0;
     --color-primary-dark: #0051bb;
-    --color-error: #d61f1f;
+    --color-error: #bf1515;
     --color-error-bg: #fce8e8;
     --color-success: #14804a;
     --color-success-bg: #e3f7ed;
@@ -187,11 +187,13 @@ button.full {
     border-radius: var(--border-radius);
     margin-bottom: var(--spacing-60);
     font-size: 0.875rem;
+    font-weight: 500;
 }
 
 .alert-error {
     background-color: var(--color-error-bg);
     color: var(--color-error);
+old;
 }
 
 .alert-success {
@@ -259,6 +261,14 @@ button.full {
 
 .mb-60 {
     margin-bottom: var(--spacing-60);
+}
+
+.mb-70 {
+    margin-bottom: var(--spacing-70);
+}
+
+.mb-100 {
+    margin-bottom: var(--spacing-100);
 }
 
 .divider {
