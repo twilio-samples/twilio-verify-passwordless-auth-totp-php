@@ -13,7 +13,7 @@
         </p>
         <hr class="mt-60">
         {% if message is not null %}
-        {% set alert_type = 'success' in message ? 'success' : 'error' %}
+        {% set alert_type = message in ['Verification success.', 'Factor setup complete!'] ? 'success' : 'error' %}
         <p class="mt-60 alert alert-{{ alert_type }}">{{ message }}</p>
         {% endif %}
         <form action="/token" method="post" class="mt-60 mb-100">
