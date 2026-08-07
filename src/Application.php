@@ -107,8 +107,8 @@ final class Application
         $postData = $request->getParsedBody();
         $username = $postData['username'] ?? '';
 
-        $secret = substr(bin2hex(random_bytes(55)), 0, 55);
-        $this->session->set('secret', $secret);
+        $identity = substr(bin2hex(random_bytes(55)), 0, 55);
+        $this->session->set('identity', $identity);
 
         $factor = $this->twilio
             ->verify
@@ -116,7 +116,7 @@ final class Application
             ->services($this->verifyServiceSid)
             // This needs to be created with each new session
             // See: https://www.twilio.com/docs/verify/api/factor#create-a-new-factor-resource
-            ->entities($secret)
+            ->entities($identity)
             ->newFactors
             ->create($username, "totp");
 
@@ -173,7 +173,7 @@ final class Application
     ): ResponseInterface {
         $postData = $request->getParsedBody();
         $code     = $postData['code'] ?? '';
-        $entity   = $this->session->get('secret') ?? '';
+        $entity   = $this->session->get('identity') ?? '';
         $factors  = $this->session->get('sid') ?? '';
 
         $factor = $this->twilio
@@ -216,7 +216,7 @@ final class Application
     ): ResponseInterface {
         $view     = Twig::fromRequest($request);
         $username = $this->session->get('friendly_name') ?? '';
-        $identity = $this->session->get('secret') ?? '';
+        $identity = $this->session->get('identity') ?? '';
 
         $flash = $this->app->getContainer()->get(Messages::class);
         assert($flash instanceof Messages);
@@ -243,7 +243,7 @@ final class Application
     ): ResponseInterface {
         $postData = $request->getParsedBody();
         $code     = $postData['code'] ?? '';
-        $entity   = $this->session->get('secret') ?? '';
+        $entity   = $this->session->get('identity') ?? '';
         $factors  = $this->session->get('sid') ?? '';
 
         $challenge = $this->twilio
