@@ -17,6 +17,8 @@ use Twilio\Rest\Client;
 use chillerlan\QRCode\QRCode;
 
 use function assert;
+use function bin2hex;
+use function random_bytes;
 
 /**
  * This class encapsulates the central Slim application,
@@ -98,7 +100,7 @@ final class Application
         $postData = $request->getParsedBody();
         $username = $postData['username'] ?? '';
 
-        $secret = "ff483d1ff591898a9942916050d2ca3f";
+        $secret = substr(bin2hex(random_bytes(55)), 0, 55);
         $this->session->set('secret', $secret);
 
         $factor = $this->twilio
