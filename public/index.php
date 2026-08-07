@@ -7,6 +7,7 @@ use DI\Container;
 use Dotenv\Dotenv;
 use SlimSession\Helper;
 use Slim\Factory\AppFactory;
+use Slim\Flash\Messages;
 use Slim\Middleware\Session;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
@@ -45,6 +46,10 @@ $container->set(
 
 $container->set('session', function () {
     return new Helper();
+});
+
+$container->set(Messages::class, function () {
+    return new Messages();
 });
 
 /**

@@ -176,6 +176,13 @@ final class Application
             );
 
         $location = $factor->status === 'verified' ? '/token' : '/challenge';
+
+        if ($factor->status === 'verified') {
+            $flash = $this->app->getContainer()->get(Messages::class);
+            assert($flash instanceof Messages);
+            $flash->addMessage('message', "Factor setup complete!");
+        }
+
         $response = $response
             ->withHeader('Location', $location)
             ->withStatus(StatusCodeInterface::STATUS_FOUND);
@@ -195,12 +202,17 @@ final class Application
         $username = $this->session->get('friendly_name') ?? '';
         $identity = $this->session->get('secret') ?? '';
 
+        $flash = $this->app->getContainer()->get(Messages::class);
+        assert($flash instanceof Messages);
+        $message = $flash->getFirstMessage('message');
+
         return $view->render(
             $response,
             'enter-code.html.twig',
             [
-                'username' => $username,
                 'identity' => $identity,
+                'message'  => $message,
+                'username' => $username,
             ],
         );
     }
@@ -230,6 +242,11 @@ final class Application
                 ],
             );
 
+        $flash = $this->app->getContainer()->get(Messages::class);
+        assert($flash instanceof Messages);
+        $flash->addMessage('message', $challenge->status === "approved" ? "Verification success." : "Verification failed.");
+
+        // Add a flash message stating whether the code is valid or not
         $response = $response
             ->withHeader('Location', "/token")
             ->withStatus(StatusCodeInterface::STATUS_FOUND);
