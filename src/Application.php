@@ -50,12 +50,14 @@ final class Application
      */
     public function setupRoutes(): void
     {
-        $this->app->get('/', [$this, 'displayCreateTotpFactorForm']);
-        $this->app->post('/', [$this, 'processCreateTotpFactorForm']);
-        $this->app->get('/challenge', [$this, 'displayVerifyUserForm']);
-        $this->app->post('/challenge', [$this, 'processVerifyUserForm']);
-        $this->app->get('/token', [$this, 'showQRCodeForm']);
-        $this->app->post('/token', [$this, 'processQRCodeForm']);
+        $this->app->get('/', [$this, 'displayCreateTotpFactorForm'])->setName("create-totp.display");
+        $this->app->post('/', [$this, 'processCreateTotpFactorForm'])->setName("create-totp.process");
+
+        $this->app->get('/challenge', [$this, 'displayVerifyUserForm'])->setName("verify-user.display");
+        $this->app->post('/challenge', [$this, 'processVerifyUserForm'])->setName("verify-user.process");
+
+        $this->app->get('/token', [$this, 'showQRCodeForm'])->setName("qrcode.display");
+        $this->app->post('/token', [$this, 'processQRCodeForm'])->setName("qrcode.process");
     }
 
     /**
@@ -63,9 +65,14 @@ final class Application
      *
      * @return RouteInterface[]
      */
-    public function getRoutes(): array
+    private function getRoutes(): array
     {
         return $this->app->getRouteCollector()->getRoutes();
+    }
+
+    private function getNamedRoute(string $routeName): RouteInterface
+    {
+        return $this->app->getRouteCollector()->getNamedRoute($routeName);
     }
 
     /**
@@ -118,9 +125,13 @@ final class Application
         $this->session->set('otp_uri', $factor->binding['uri']);
         $this->session->set('url', $factor->url);
 
-        $location = $factor->status === 'unverified' ? '/challenge' : '/';
         $response = $response
-            ->withHeader('Location', $location)
+            ->withHeader(
+                'Location',
+                $factor->status === 'unverified'
+                    ? $this->getNamedRoute("verify-user.display")->getPattern()
+                    : $this->getNamedRoute("create-totp.display")->getPattern(),
+            )
             ->withStatus(StatusCodeInterface::STATUS_FOUND);
 
         return $response;
@@ -177,8 +188,6 @@ final class Application
                 ],
             );
 
-        $location = $factor->status === 'verified' ? '/token' : '/challenge';
-
         if ($factor->status === 'verified') {
             $flash = $this->app->getContainer()->get(Messages::class);
             assert($flash instanceof Messages);
@@ -186,7 +195,12 @@ final class Application
         }
 
         $response = $response
-            ->withHeader('Location', $location)
+            ->withHeader(
+                'Location',
+                $factor->status === 'verified'
+                    ? $this->getNamedRoute("qrcode.display")->getPattern()
+                    : $this->getNamedRoute("verify-user.display")->getPattern(),
+            )
             ->withStatus(StatusCodeInterface::STATUS_FOUND);
 
         return $response;
