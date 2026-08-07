@@ -172,14 +172,13 @@ final class Application
         ResponseInterface $response,
     ): ResponseInterface {
         $postData = $request->getParsedBody();
-        $factors  = $this->session->get('sid') ?? '';
 
         $factor = $this->twilio
             ->verify
             ->v2
             ->services($this->verifyServiceSid)
-            ->factors($factors)
             ->entities($this->session->get('seed') ?? '')
+            ->factors($this->session->get('sid') ?? '')
             ->update(
                 [
                     "authPayload" => $postData['code'] ?? '',
@@ -211,8 +210,6 @@ final class Application
         ResponseInterface $response,
     ): ResponseInterface {
         $flash = $this->app->getContainer()->get(Messages::class);
-        assert($flash instanceof Messages);
-        $message = $flash->getFirstMessage('message');
 
         return Twig::fromRequest($request)
             ->render(
@@ -220,7 +217,7 @@ final class Application
                 'enter-code.html.twig',
                 [
                     'friendlyName' => $this->session->get('friendly_name') ?? '',
-                    'message'      => $message,
+                    'message'      => $flash->getFirstMessage('message'),
                     'seed'         => $this->session->get('seed') ?? '',
                 ],
             );
@@ -235,9 +232,6 @@ final class Application
         ResponseInterface $response,
     ): ResponseInterface {
         $postData = $request->getParsedBody();
-        $code     = $postData['code'] ?? '';
-        $entity   = $this->session->get('identity') ?? '';
-        $factors  = $this->session->get('sid') ?? '';
 
         $challenge = $this->twilio
             ->verify
@@ -245,9 +239,9 @@ final class Application
             ->services($this->verifyServiceSid)
             ->entities($this->session->get('seed') ?? '')
             ->challenges->create(
-                $factors,
+                $this->session->get('sid') ?? '',
                 [
-                    "authPayload" => $code,
+                    "authPayload" => $postData['code'] ?? '',
                 ],
             );
 
