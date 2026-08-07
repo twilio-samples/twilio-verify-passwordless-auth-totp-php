@@ -107,8 +107,8 @@ final class Application
         $postData = $request->getParsedBody();
         $username = $postData['username'] ?? '';
 
-        $identity = substr(bin2hex(random_bytes(55)), 0, 55);
-        $this->session->set('identity', $identity);
+        $seed = substr(bin2hex(random_bytes(20)), 0, 32);
+        $this->session->set('seed', $seed);
 
         $factor = $this->twilio
             ->verify
@@ -116,7 +116,7 @@ final class Application
             ->services($this->verifyServiceSid)
             // This needs to be created with each new session
             // See: https://www.twilio.com/docs/verify/api/factor#create-a-new-factor-resource
-            ->entities($identity)
+            ->entities($seed)
             ->newFactors
             ->create($username, "totp");
 
@@ -158,6 +158,7 @@ final class Application
                         ->render(
                             $this->session->get('otp_uri') ?? '',
                         ),
+                    'seed'    => $this->session->get('seed') ?? '',
                 ],
             );
     }
@@ -171,15 +172,13 @@ final class Application
         ResponseInterface $response,
     ): ResponseInterface {
         $postData = $request->getParsedBody();
-        $entity   = $this->session->get('identity') ?? '';
-        $factors  = $this->session->get('sid') ?? '';
 
         $factor = $this->twilio
             ->verify
             ->v2
             ->services($this->verifyServiceSid)
-            ->entities($entity)
-            ->factors($factors)
+            ->entities($this->session->get('seed') ?? '')
+            ->factors($this->session->get('sid') ?? '')
             ->update(
                 [
                     "authPayload" => $postData['code'] ?? '',
@@ -210,11 +209,7 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        $identity = $this->session->get('identity') ?? '';
-
         $flash = $this->app->getContainer()->get(Messages::class);
-        assert($flash instanceof Messages);
-        $message = $flash->getFirstMessage('message');
 
         return Twig::fromRequest($request)
             ->render(
@@ -222,8 +217,8 @@ final class Application
                 'enter-code.html.twig',
                 [
                     'friendlyName' => $this->session->get('friendly_name') ?? '',
-                    'identity'     => $identity,
-                    'message'      => $message,
+                    'message'      => $flash->getFirstMessage('message'),
+                    'seed'         => $this->session->get('seed') ?? '',
                 ],
             );
     }
@@ -237,19 +232,16 @@ final class Application
         ResponseInterface $response,
     ): ResponseInterface {
         $postData = $request->getParsedBody();
-        $code     = $postData['code'] ?? '';
-        $entity   = $this->session->get('identity') ?? '';
-        $factors  = $this->session->get('sid') ?? '';
 
         $challenge = $this->twilio
             ->verify
             ->v2
             ->services($this->verifyServiceSid)
-            ->entities($entity)
+            ->entities($this->session->get('seed') ?? '')
             ->challenges->create(
-                $factors,
+                $this->session->get('sid') ?? '',
                 [
-                    "authPayload" => $code,
+                    "authPayload" => $postData['code'] ?? '',
                 ],
             );
 
