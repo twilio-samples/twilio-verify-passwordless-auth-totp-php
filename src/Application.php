@@ -149,18 +149,17 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        $view = Twig::fromRequest($request);
-
-        $qrCodeUri = $this->session->get('otp_uri') ?? '';
-        $qrcode    = (new QRCode())->render($qrCodeUri);
-
-        return $view->render(
-            $response,
-            'verify-user.html.twig',
-            [
-                'qr_code' => $qrcode,
-            ],
-        );
+        return Twig::fromRequest($request)
+            ->render(
+                $response,
+                'verify-user.html.twig',
+                [
+                    'qr_code' => (new QRCode())
+                        ->render(
+                            $this->session->get('otp_uri') ?? '',
+                        ),
+                ],
+            );
     }
 
     /**
@@ -172,7 +171,6 @@ final class Application
         ResponseInterface $response,
     ): ResponseInterface {
         $postData = $request->getParsedBody();
-        $code     = $postData['code'] ?? '';
         $entity   = $this->session->get('identity') ?? '';
         $factors  = $this->session->get('sid') ?? '';
 
@@ -184,14 +182,12 @@ final class Application
             ->factors($factors)
             ->update(
                 [
-                    "authPayload" => $code,
+                    "authPayload" => $postData['code'] ?? '',
                 ],
             );
 
         if ($factor->status === 'verified') {
-            $flash = $this->app->getContainer()->get(Messages::class);
-            assert($flash instanceof Messages);
-            $flash->addMessage('message', "Factor setup complete!");
+            $this->setFlashMessage("Factor setup complete!");
         }
 
         $response = $response
@@ -214,23 +210,22 @@ final class Application
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        $view     = Twig::fromRequest($request);
-        $username = $this->session->get('friendly_name') ?? '';
         $identity = $this->session->get('identity') ?? '';
 
         $flash = $this->app->getContainer()->get(Messages::class);
         assert($flash instanceof Messages);
         $message = $flash->getFirstMessage('message');
 
-        return $view->render(
-            $response,
-            'enter-code.html.twig',
-            [
-                'identity' => $identity,
-                'message'  => $message,
-                'username' => $username,
-            ],
-        );
+        return Twig::fromRequest($request)
+            ->render(
+                $response,
+                'enter-code.html.twig',
+                [
+                    'friendlyName' => $this->session->get('friendly_name') ?? '',
+                    'identity'     => $identity,
+                    'message'      => $message,
+                ],
+            );
     }
 
     /**
@@ -258,9 +253,11 @@ final class Application
                 ],
             );
 
-        $flash = $this->app->getContainer()->get(Messages::class);
-        assert($flash instanceof Messages);
-        $flash->addMessage('message', $challenge->status === "approved" ? "Verification success." : "Verification failed.");
+        $this->setFlashMessage(
+            $challenge->status === "approved"
+                ? "Verification success."
+                : "Verification failed.",
+        );
 
         // Add a flash message stating whether the code is valid or not
         $response = $response
@@ -268,5 +265,12 @@ final class Application
             ->withStatus(StatusCodeInterface::STATUS_FOUND);
 
         return $response;
+    }
+
+    private function setFlashMessage(string $message): void
+    {
+        $flash = $this->app->getContainer()->get(Messages::class);
+        assert($flash instanceof Messages);
+        $flash->addMessage('message', $message);
     }
 }
