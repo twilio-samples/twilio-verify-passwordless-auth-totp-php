@@ -12,7 +12,7 @@
         This demo of the <a href="https://www.twilio.com/docs/verify/api">Twilio Verify API</a> shows how to set up two-factor authentication (2FA) with a third-party authenticator app like <a href="https://authy.com/download/">Authy</a> or Google Authenticator using the <a href="https://www.twilio.com/docs/glossary/totp">time-based one-time password (TOTP)</a> standard.
         </p>
         <hr class="mt-60">
-        <form action="/" method="post" class="mt-60">
+        <form action="/" method="post" class="mt-60 mb-60">
             <label for="username">Enter your username:</label>
             <div class="mt-20" style="display: flex; flex: auto; column-gap: 0.25rem; flex-shrink: 0;">
                 <input
@@ -23,10 +23,14 @@
                     style="flex-shrink: 1;"
                     type="text"
                 >
-                <button type="submit" class="primary" style="flex-grow: 1;">Set up two-factor authentication</button>
+                <button
+                    class="primary"
+                    style="flex-grow: 1; white-space: nowrap"
+                    type="submit"
+                >Set up two-factor authentication</button>
             </div>
         </form>
-        <div style="background-color: #d6ebf0; padding: 2em; border-radius: 0.25rem;" class="mb-60">
+        <div style="background-color: #d6ebf0; padding: 2em; border-radius: 0.25rem;" class="mb-60 mt-60">
             <h2 class="mb-60">Create a New Factor | What's happening here:</h2>
             <p style="line-height: 1.5;" class="mb-60">
                 The API is <strong>creating a new TOTP <a href="https://www.twilio.com/docs/verify/api/factor#create-a-new-factor-resource">Factor</a></strong> when you click "Set up two-factor authentication".
