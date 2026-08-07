@@ -158,6 +158,7 @@ final class Application
                         ->render(
                             $this->session->get('otp_uri') ?? '',
                         ),
+                    'seed'    => $this->session->get('seed') ?? '',
                 ],
             );
     }
